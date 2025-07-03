@@ -56,9 +56,7 @@ const resolvers = {
             return group;
         },
         groups: async (_parent, { page, pageSize }, { user }) => {
-            console.log("ye hit kia", user.id, page, pageSize);
             if (!user.groups) return Error(`User have no groups!`);
-            console.log("group to hai", user.groups);
 
             let groups = await Group.find({ _id: { $in: user.groups } })
                 .sort({ updatedAt: -1 })
@@ -738,7 +736,6 @@ const resolvers = {
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;
                         const istrue = variables.id === beaconID && (isFollower || isLeader);
-                        console.log("sosuser", userSOS);
                         if (userSOS != null && user.id != userSOS._id) {
                             payload.beaconLocations.userSOS = parseUserObject(userSOS);
                             return istrue;
