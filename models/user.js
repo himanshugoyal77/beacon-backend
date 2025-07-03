@@ -14,6 +14,10 @@ const UserSchema = new Schema(
         location: LocationSchema,
         beacons: { type: [Schema.Types.ObjectId], ref: "Beacon", default: [] },
         groups: { type: [Schema.Types.ObjectId], ref: "Group", default: [] },
+        imageUrl: {
+            type: String,
+            default: "https://cdn.jsdelivr.net/gh/alohe/avatars/png/memo_35.png", // default avatar URL
+        },
     },
     {
         timestamps: true,

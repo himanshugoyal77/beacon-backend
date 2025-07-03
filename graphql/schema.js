@@ -73,6 +73,7 @@ const typeDefs = gql`
         location: Location
         beacons: [Beacon!]!
         groups: [Group!]!
+        imageUrl: String!
     }
 
     input AuthPayload {
@@ -159,6 +160,7 @@ const typeDefs = gql`
         deleteBeacon(id: ID!): Boolean!
         sos(id: ID!): User!
         deleteUser(credentials: AuthPayload!): Boolean!
+        updateUserImage(userId: ID!, imageUrl: String!): User!
     }
 
     type Subscription {

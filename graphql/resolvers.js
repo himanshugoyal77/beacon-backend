@@ -28,7 +28,7 @@ const resolvers = {
                 .populate("leader followers")
                 .populate({
                     path: "landmarks",
-                    populate: { path: "createdBy", select: "name email" },
+                    populate: { path: "createdBy", select: "name email imageUrl" },
                 });
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return error iff user not in beacon
@@ -56,7 +56,9 @@ const resolvers = {
             return group;
         },
         groups: async (_parent, { page, pageSize }, { user }) => {
+            console.log("ye hit kia", user.id, page, pageSize);
             if (!user.groups) return Error(`User have no groups!`);
+            console.log("group to hai", user.groups);
 
             let groups = await Group.find({ _id: { $in: user.groups } })
                 .sort({ updatedAt: -1 })
@@ -67,6 +69,7 @@ const resolvers = {
 
             // it might be possible that group has been deleted
             groups = groups.filter(group => group !== null);
+            console.log("groups", groups[0].members);
 
             return groups ?? [];
         },
@@ -541,6 +544,7 @@ const resolvers = {
             const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
             const populatedLandmark = await newLandmark.save().then(lan => lan.populate("createdBy"));
 
+            console.log("populatedLandmark", populatedLandmark);
             beacon.landmarks.push(newLandmark.id);
 
             pubsub.publish("BEACON_LOCATIONS", {
@@ -694,6 +698,31 @@ const resolvers = {
                 return false;
             }
         },
+
+        updateUserImage: async (_parent, { userId, imageUrl }, context) => {
+            // Optional: Add authentication check
+            if (!context.user) throw new AuthenticationError("Not authenticated");
+            console.log("userId", userId, imageUrl);
+
+            try {
+                const updatedUser = await User.findByIdAndUpdate(
+                    userId,
+                    { imageUrl },
+                    { new: true } // Return the updated document
+                );
+
+                console.log("updatedUser", updatedUser);
+
+                if (!updatedUser) {
+                    throw new UserInputError("User not found");
+                }
+
+                return updatedUser;
+            } catch (error) {
+                console.log("error", error);
+                throw new Error("Failed to update user image");
+            }
+        },
     },
     ...(process.env._HANDLER == null && {
         Subscription: {
@@ -709,7 +738,7 @@ const resolvers = {
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;
                         const istrue = variables.id === beaconID && (isFollower || isLeader);
-
+                        console.log("sosuser", userSOS);
                         if (userSOS != null && user.id != userSOS._id) {
                             payload.beaconLocations.userSOS = parseUserObject(userSOS);
                             return istrue;
