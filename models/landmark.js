@@ -8,6 +8,7 @@ const landmarkSchema = new Schema(
     {
         title: { type: String, required: true },
         location: { type: LocationSchema, required: true },
+        icon: { type: String, required: true },
         createdBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
     },
     {

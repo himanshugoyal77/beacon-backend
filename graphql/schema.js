@@ -49,6 +49,7 @@ const typeDefs = gql`
         _id: ID!
         createdAt: Float!
         title: String!
+        icon: String!
         location: Location!
         createdBy: User!
     }
@@ -56,6 +57,7 @@ const typeDefs = gql`
     input LandmarkInput {
         title: String!
         location: LocationInput!
+        icon: String!
     }
 
     type User {

@@ -532,33 +532,44 @@ const resolvers = {
         },
 
         createLandmark: async (_, { landmark, beaconID }, { user, pubsub }) => {
-            const beacon = await Beacon.findById(beaconID);
-            // to save on a db call to populate leader, we just use the stored id to compare
+            try {
+                const beacon = await Beacon.findById(beaconID);
+                console.log("inside create landmark");
+                // to save on a db call to populate leader, we just use the stored id to compare
 
-            if (!beacon) return new UserInputError("Beacon doesn't exist");
+                if (!beacon) return new UserInputError("Beacon doesn't exist");
 
-            if (!beacon.followers.includes(user.id) && beacon.leader != user.id)
-                return new UserInputError("User should be part of beacon");
-            const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
-            const populatedLandmark = await newLandmark.save().then(lan => lan.populate("createdBy"));
+                console.log("below return");
 
-            console.log("populatedLandmark", populatedLandmark);
-            beacon.landmarks.push(newLandmark.id);
+                if (!beacon.followers.includes(user.id) && beacon.leader != user.id)
+                    return new UserInputError("User should be part of beacon");
+                const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
+                console.log("new landmark", newLandmark);
+                const savedLandmark = await newLandmark.save();
+                console.log("savedLandmark", savedLandmark);
+                const populatedLandmark = await savedLandmark.populate("createdBy");
 
-            pubsub.publish("BEACON_LOCATIONS", {
-                beaconLocations: {
-                    userSOS: null,
-                    route: null,
-                    updatedUser: null,
-                    landmark: populatedLandmark,
-                },
-                beaconID: beacon.id,
-                followers: beacon.followers,
-                leaderID: beacon.leader,
-            });
-            await beacon.save();
+                console.log("populatedLandmark", populatedLandmark);
+                beacon.landmarks.push(newLandmark.id);
 
-            return populatedLandmark;
+                pubsub.publish("BEACON_LOCATIONS", {
+                    beaconLocations: {
+                        userSOS: null,
+                        route: null,
+                        updatedUser: null,
+                        landmark: populatedLandmark,
+                    },
+                    beaconID: beacon.id,
+                    followers: beacon.followers,
+                    leaderID: beacon.leader,
+                });
+                await beacon.save();
+                console.log("populated 2", populatedLandmark);
+                return populatedLandmark;
+            } catch (error) {
+                console.log("error", error);
+                throw new Error("Failed to create landmark");
+            }
         },
 
         updateUserLocation: async (_, { id, location }, { user, pubsub }) => {
