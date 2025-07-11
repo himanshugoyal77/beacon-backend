@@ -67,7 +67,6 @@ const resolvers = {
 
             // it might be possible that group has been deleted
             groups = groups.filter(group => group !== null);
-            console.log("groups", groups[0].members);
 
             return groups ?? [];
         },
@@ -182,11 +181,11 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-            const { name, email } = userInput;
+            const { name, email, imageUrl } = userInput;
             let user = await User.findOne({ email });
 
             if (!user) {
-                const newUser = new User({ name, email, isVerified: true });
+                const newUser = new User({ name, email, isVerified: true, imageUrl });
                 user = await newUser.save();
             }
 
@@ -534,22 +533,17 @@ const resolvers = {
         createLandmark: async (_, { landmark, beaconID }, { user, pubsub }) => {
             try {
                 const beacon = await Beacon.findById(beaconID);
-                console.log("inside create landmark");
                 // to save on a db call to populate leader, we just use the stored id to compare
 
                 if (!beacon) return new UserInputError("Beacon doesn't exist");
 
-                console.log("below return");
-
                 if (!beacon.followers.includes(user.id) && beacon.leader != user.id)
                     return new UserInputError("User should be part of beacon");
                 const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
-                console.log("new landmark", newLandmark);
+
                 const savedLandmark = await newLandmark.save();
-                console.log("savedLandmark", savedLandmark);
                 const populatedLandmark = await savedLandmark.populate("createdBy");
 
-                console.log("populatedLandmark", populatedLandmark);
                 beacon.landmarks.push(newLandmark.id);
 
                 pubsub.publish("BEACON_LOCATIONS", {
@@ -564,7 +558,7 @@ const resolvers = {
                     leaderID: beacon.leader,
                 });
                 await beacon.save();
-                console.log("populated 2", populatedLandmark);
+
                 return populatedLandmark;
             } catch (error) {
                 console.log("error", error);
@@ -743,6 +737,7 @@ const resolvers = {
                     (payload, variables, { user }) => {
                         const { beaconLocations, leaderID, followers, beaconID } = payload;
                         const { userSOS, route, updatedUser, landmark } = beaconLocations;
+                        console.log("payload", payload);
 
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;

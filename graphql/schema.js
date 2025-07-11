@@ -115,6 +115,7 @@ const typeDefs = gql`
     input oAuthInput {
         email: String
         name: String
+        imageUrl: String
     }
 
     type UpdatedGroupPayload {
