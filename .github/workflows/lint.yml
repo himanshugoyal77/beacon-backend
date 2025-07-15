@@ -1,45 +1,45 @@
 name: Lint
 
 on:
-    push:
-        branches: [master]
-    pull_request:
-        branches: [master]
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [18.x]
+    strategy:
+      matrix:
+        node-version: [18.x]
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v2
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: "npm"
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
 
-            - name: Clean npm cache and remove node_modules
-              run: |
-                  rm -rf node_modules package-lock.json
-                  npm cache clean --force
+      - name: Clean npm cache and remove node_modules
+        run: |
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
 
-            - name: Install dependencies
-              run: npm install
+      - name: Install dependencies
+        run: npm install
 
-            - name: Verify package-lock.json
-              run: git diff --exit-code package-lock.json || echo "⚠️ package-lock.json changed, please update it."
+      - name: Verify package-lock.json
+        run: git diff --exit-code package-lock.json || echo "⚠️ package-lock.json changed, please update it."
 
-            - name: Run npm ci
-              run: npm ci
+      - name: Run npm ci
+        run: npm ci
 
-            - name: Run Prettier
-              run: npx prettier -c "**/*.js"
+      - name: Run Prettier
+        run: npx prettier -c "**/*.js"
 
-            - name: Run ESLint
-              run: npx eslint .
+      - name: Run ESLint
+        run: npx eslint .
