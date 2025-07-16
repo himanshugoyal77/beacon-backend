@@ -705,11 +705,7 @@ const resolvers = {
             if (!context.user) throw new AuthenticationError("Not authenticated");
 
             try {
-                const updatedUser = await User.findByIdAndUpdate(
-                    userId,
-                    { imageUrl },
-                    { new: true }
-                );
+                const updatedUser = await User.findByIdAndUpdate(userId, { imageUrl }, { new: true });
 
                 if (!updatedUser) {
                     throw new UserInputError("User not found");
