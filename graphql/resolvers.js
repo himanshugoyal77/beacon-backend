@@ -265,9 +265,8 @@ const resolvers = {
 
             return verificationCode;
         },
-        completeVerification: async (_, { userId }, { user }) => {
+        completeVerification: async (_, { userId }) => {
             let currentUser = await User.findById(userId);
-            console.log("Current user: ", currentUser, user);
             currentUser.isVerified = true;
             await currentUser.save();
             return currentUser;
@@ -639,7 +638,6 @@ const resolvers = {
         deleteUser: async (_, { credentials }) => {
             try {
                 const userToDelete = await User.findOne({ email: credentials.email });
-                console.log("User to delete:", userToDelete);
                 if (!userToDelete) {
                     throw new UserInputError("User not found");
                 }
@@ -705,16 +703,13 @@ const resolvers = {
         updateUserImage: async (_parent, { userId, imageUrl }, context) => {
             // Optional: Add authentication check
             if (!context.user) throw new AuthenticationError("Not authenticated");
-            console.log("userId", userId, imageUrl);
 
             try {
                 const updatedUser = await User.findByIdAndUpdate(
                     userId,
                     { imageUrl },
-                    { new: true } // Return the updated document
+                    { new: true }
                 );
-
-                console.log("updatedUser", updatedUser);
 
                 if (!updatedUser) {
                     throw new UserInputError("User not found");
@@ -737,7 +732,6 @@ const resolvers = {
                     (payload, variables, { user }) => {
                         const { beaconLocations, leaderID, followers, beaconID } = payload;
                         const { userSOS, route, updatedUser, landmark } = beaconLocations;
-                        console.log("payload", payload);
 
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;
