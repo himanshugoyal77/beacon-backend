@@ -729,7 +729,6 @@ const resolvers = {
                         const { beaconLocations, leaderID, followers, beaconID } = payload;
                         const { userSOS, route, updatedUser, landmark } = beaconLocations;
 
-
                         // Check if user is part of this beacon
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;
