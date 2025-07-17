@@ -1,28 +1,78 @@
 const { default: mongoose } = require("mongoose");
 
+function parseUserObject(userObject) {
+    if (!userObject) {
+        return null;
+    }
+
+    if (typeof userObject === "string") {
+        return convertToObjectId(userObject);
+    }
+
+    let model = null;
+
+    try {
+        model = {
+            _id: safeObjectId(userObject._id),
+            name: userObject.name,
+            email: userObject.email,
+            password: userObject.password,
+            groups: Array.isArray(userObject.groups)
+                ? userObject.groups
+                      .filter(Boolean)
+                      .map(group => safeParse(parseGroupObject, group))
+                      .filter(Boolean)
+                : [],
+            beacons: Array.isArray(userObject.beacons)
+                ? userObject.beacons
+                      .filter(Boolean)
+                      .map(beacon => safeParse(parseBeaconObject, beacon))
+                      .filter(Boolean)
+                : [],
+            location: parseLocationObject(userObject.location),
+            createdAt: convertToDate(userObject.createdAt),
+            updatedAt: convertToDate(userObject.updatedAt),
+            __v: userObject.__v,
+        };
+    } catch (error) {
+        return null;
+    }
+
+    return model;
+}
+
 function parseBeaconObject(beaconObject) {
+    if (!beaconObject) {
+        return null;
+    }
+
     if (typeof beaconObject === "string") {
         return convertToObjectId(beaconObject);
     }
 
-    var model = {
-        _id: convertToObjectId(beaconObject._id),
+    const model = {
+        _id: safeObjectId(beaconObject._id),
         title: beaconObject.title,
         shortcode: beaconObject.shortcode,
         startsAt: convertToDate(beaconObject.startsAt),
         expiresAt: convertToDate(beaconObject.expiresAt),
-        group: parseGroupObject(beaconObject.group),
-        leader: parseUserObject(beaconObject.leader),
-        location: beaconObject.location,
+        group: safeParse(parseGroupObject, beaconObject.group),
+        leader: safeParse(parseUserObject, beaconObject.leader),
+        location: parseLocationObject(beaconObject.location),
         followers: Array.isArray(beaconObject.followers)
-            ? beaconObject.followers.map(follower => parseUserObject(follower))
+            ? beaconObject.followers
+                  .filter(Boolean)
+                  .map(follower => safeParse(parseUserObject, follower))
+                  .filter(Boolean)
             : [],
         landmarks: Array.isArray(beaconObject.landmarks)
-            ? beaconObject.landmarks.map(landmark => parseLandmarkObject(landmark))
+            ? beaconObject.landmarks
+                  .filter(Boolean)
+                  .map(landmark => safeParse(parseLandmarkObject, landmark))
+                  .filter(Boolean)
             : [],
-        route: beaconObject.route.map(single => parseLocationObject(single)),
+        route: Array.isArray(beaconObject.route) ? beaconObject.route.filter(Boolean).map(parseLocationObject) : [],
         geofence: beaconObject.geofence,
-
         updatedAt: convertToDate(beaconObject.updatedAt),
         __v: beaconObject.__v,
     };
@@ -30,47 +80,34 @@ function parseBeaconObject(beaconObject) {
     return model;
 }
 
-function parseUserObject(userObject) {
-    if (typeof userObject === "string") {
-        return convertToObjectId(userObject);
-    }
-
-    try {
-        var model = {
-            _id: convertToObjectId(userObject._id),
-            name: userObject.name,
-            email: userObject.email,
-            password: userObject.password,
-            groups: Array.isArray(userObject.groups) ? userObject.groups.map(group => parseGroupObject(group)) : [],
-            beacons: Array.isArray(userObject.beacons)
-                ? userObject.beacons.map(beacon => parseBeaconObject(beacon))
-                : [],
-            location: userObject.location,
-            createdAt: convertToDate(userObject.createdAt),
-            updatedAt: convertToDate(userObject.updatedAt),
-            __v: userObject.__v,
-        };
-    } catch (error) {
-        console.log(error);
-    }
-
-    return model;
-}
-
 function parseGroupObject(groupObject) {
+    if (!groupObject) {
+        return null;
+    }
+
     if (typeof groupObject === "string") {
         return convertToObjectId(groupObject);
     }
 
-    var model = {
-        _id: convertToObjectId(groupObject._id),
+    const model = {
+        _id: safeObjectId(groupObject._id),
         title: groupObject.title,
         shortcode: groupObject.shortcode,
-        createdAt: new Date(groupObject.createdAt),
-        updatedAt: new Date(groupObject.updatedAtt),
-        leader: parseUserObject(groupObject.leader),
-        members: Array.isArray(groupObject.members) ? groupObject.members.map(member => parseUserObject(member)) : [],
-        beacons: Array.isArray(groupObject.beacons) ? groupObject.beacons.map(beacon => parseBeaconObject(beacon)) : [],
+        createdAt: convertToDate(groupObject.createdAt),
+        updatedAt: convertToDate(groupObject.updatedAt), // ← FIXED TYPO
+        leader: safeParse(parseUserObject, groupObject.leader),
+        members: Array.isArray(groupObject.members)
+            ? groupObject.members
+                  .filter(Boolean)
+                  .map(member => safeParse(parseUserObject, member))
+                  .filter(Boolean)
+            : [],
+        beacons: Array.isArray(groupObject.beacons)
+            ? groupObject.beacons
+                  .filter(Boolean)
+                  .map(beacon => safeParse(parseBeaconObject, beacon))
+                  .filter(Boolean)
+            : [],
         __v: groupObject.__v,
     };
 
@@ -78,15 +115,19 @@ function parseGroupObject(groupObject) {
 }
 
 function parseLandmarkObject(landmarkObject) {
+    if (!landmarkObject) {
+        return null;
+    }
+
     if (typeof landmarkObject === "string") {
         return convertToObjectId(landmarkObject);
     }
 
-    var model = {
-        _id: convertToObjectId(landmarkObject._id),
+    const model = {
+        _id: safeObjectId(landmarkObject._id),
         title: landmarkObject.title,
         location: parseLocationObject(landmarkObject.location),
-        createdBy: parseUserObject(landmarkObject.createdBy),
+        createdBy: safeParse(parseUserObject, landmarkObject.createdBy),
         createdAt: convertToDate(landmarkObject.createdAt),
         updatedAt: convertToDate(landmarkObject.updatedAt),
         __v: landmarkObject.__v,
@@ -96,23 +137,35 @@ function parseLandmarkObject(landmarkObject) {
 }
 
 function parseLocationObject(locationObject) {
-    console.log(JSON.stringify(locationObject));
-    if (locationObject == null) return undefined;
+    if (!locationObject) return undefined;
 
-    var model = {
+    return {
         lat: locationObject.lat,
         lon: locationObject.lon,
     };
-
-    return model;
 }
 
 function convertToObjectId(id) {
     return new mongoose.Types.ObjectId(id);
 }
 
+function safeObjectId(id) {
+    if (!id) return null;
+    return convertToObjectId(id);
+}
+
 function convertToDate(date) {
+    if (!date) return null;
     return new Date(date);
+}
+
+function safeParse(fn, obj) {
+    if (!obj) return null;
+    try {
+        return fn(obj);
+    } catch (err) {
+        return null;
+    }
 }
 
 module.exports = {

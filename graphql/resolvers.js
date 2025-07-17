@@ -619,7 +619,7 @@ const resolvers = {
             const currentDate = new Date();
 
             if (new Date(beacon.expiresAt) < currentDate) return new UserInputError("Beacon is already expired!");
-
+            // console.log("inside sos", user);
             pubsub.publish("BEACON_LOCATIONS", {
                 beaconLocations: {
                     userSOS: user,
@@ -729,27 +729,56 @@ const resolvers = {
                         const { beaconLocations, leaderID, followers, beaconID } = payload;
                         const { userSOS, route, updatedUser, landmark } = beaconLocations;
 
+
+                        // Check if user is part of this beacon
                         const isFollower = followers.includes(user.id);
                         const isLeader = leaderID == user.id;
-                        const istrue = variables.id === beaconID && (isFollower || isLeader);
-                        if (userSOS != null && user.id != userSOS._id) {
-                            payload.beaconLocations.userSOS = parseUserObject(userSOS);
-                            return istrue;
-                        }
-                        if (route != null && leaderID != user.id) {
-                            return istrue;
+                        const isBeaconParticipant = variables.id === beaconID && (isFollower || isLeader);
+
+                        // If user is not part of this beacon, don't send updates
+                        if (!isBeaconParticipant) {
+                            return false;
                         }
 
-                        // stopping user who has updated the location
-                        if (updatedUser != null && updatedUser._id != user.id) {
+                        // Handle userSOS updates
+                        if (userSOS != null) {
+                            // Don't send SOS updates to the user who triggered the SOS
+                            if (user.id == userSOS._id) {
+                                return false;
+                            }
+                            payload.beaconLocations.userSOS = parseUserObject(userSOS);
+                            return true;
+                        }
+
+                        // Handle route updates
+                        if (route != null) {
+                            // Don't send route updates to the leader who created the route
+                            if (leaderID == user.id) {
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        // Handle user location updates
+                        if (updatedUser != null) {
+                            // Don't send location updates to the user who updated their location
+                            if (updatedUser._id == user.id) {
+                                return false;
+                            }
                             payload.beaconLocations.updatedUser = parseUserObject(updatedUser);
-                            return istrue;
+                            return true;
                         }
-                        // stopping the creator of landmark
-                        if (landmark != null && landmark.createdBy._id != user.id) {
+
+                        // Handle landmark updates
+                        if (landmark != null) {
+                            // Don't send landmark updates to the user who created the landmark
+                            if (landmark.createdBy._id == user.id) {
+                                return false;
+                            }
                             payload.beaconLocations.landmark = parseLandmarkObject(landmark);
-                            return istrue;
+                            return true;
                         }
+                        // If none of the above conditions are met, don't send the update
                         return false;
                     }
                 ),
